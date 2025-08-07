@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SST Tests Preparation</title>
+    <!-- Use Tailwind CSS for modern, responsive styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include html2canvas for capturing the result as a PNG -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        /* Define a custom font family for Georgia */
+        .font-georgia {
+            font-family: Georgia, serif;
+        }
+
+        /* Style for the custom modal box */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            text-align: center;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(-50px);
+            opacity: 0;
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Button Gradient for Submit */
+        .submit-btn {
+            background-image: linear-gradient(to right, #10b981, #059669);
+            transition: all 0.3s ease;
+        }
+        .submit-btn:hover {
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        /* Option Hover and Selected Effect with new dark green color and no zoom */
+        .quiz-option-label {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        /* Change background on hover */
+        .quiz-option-label:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background-color: #059669; /* Dark green background */
+        }
+        
+        /* Change text color to white on hover */
+        .quiz-option-label:hover span {
+            color: #ffffff;
+        }
+        
+        /* Selected option styling */
+        .quiz-option-label.selected {
+            background-color: #059669; /* Dark green background */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Ensures text inside selected option is white */
+        .quiz-option-label.selected span {
+            color: #ffffff;
+        }
+        
+        /* Hide the default radio button while keeping it functional */
+        .quiz-option-label input[type="radio"] {
+            display: none;
+        }
+        
+        /* Adjust main layout to ensure all components fit on screen */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex-grow: 1; /* Allows the container to fill available space */
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        /* On smaller screens, adjust padding to prevent content overflow */
+        @media (max-width: 640px) {
+            .quiz-content-wrapper {
+                padding: 1rem;
+            }
+        }
+        
+        /* No zoom effect on buttons */
+        .no-zoom:hover {
+            transform: none !important;
+        }
+        
+        /* Style for the temporary div used for image generation */
+        #download-result-container {
+            position: absolute;
+            top: -9999px; /* Hide off-screen */
+            left: -9999px;
+            width: 800px; /* A fixed width for consistent image output */
+            background-color: white;
+            padding: 2rem;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #download-result-container .header-clone,
+        #download-result-container .footer-clone {
+            text-align: center;
+            padding: 1rem;
+            background-color: #10b981;
+            color: white;
+        }
+        #download-result-container .results-clone {
+            padding: 2rem;
+            text-align: center;
+        }
+        #download-result-container .results-clone p,
+        #download-result-container .results-clone h2 {
+            text-align: center;
+        }
+        #download-result-container .results-clone .mb-3 {
+            margin-bottom: 0.75rem;
+        }
+        #download-result-container .results-clone .mb-6 {
+            margin-bottom: 1.5rem;
+        }
+
+        /* New styling for the full quiz review section */
+        .quiz-review-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background-color: #fafafa;
+        }
+
+        .quiz-review-question {
+            font-weight: 700;
+            color: #FF0000; /* Bright red */
+            margin-bottom: 0.75rem;
+            font-size: 1.125rem; /* text-lg */
+        }
+
+        .quiz-review-option {
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quiz-review-option.correct {
+            background-color: #dcfce7; /* green-100 */
+            color: #065f46; /* green-800 */
+            font-weight: 600;
+        }
+        .quiz-review-option.incorrect {
+            background-color: #fee2e2; /* red-100 */
+            color: #991b1b; /* red-800 */
+        }
+        
+        /* --- FIX: Updated the media print query to correctly display the results container --- */
+        @media print {
+            /* Hide the main header and footer, as well as the button container */
+            .no-print,
+            #name-entry-container,
+            #quiz-content-wrapper {
+                display: none !important;
+            }
+            
+            /* Ensure the main container holding the results is fully visible and styled for printing */
+            .container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: auto !important;
+                max-width: none !important;
+                height: auto !important;
+            }
+
+            /* Ensure the results container itself is visible and formatted for a clean printout */
+            #results-container {
+                display: block !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background-color: #ffffff !important;
+            }
+        }
+
+        /* Custom CSS for the video container to maintain a 16:9 aspect ratio */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+            border-radius: 1rem;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Styling for the question number circle */
+        .question-number-circle {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 30px; /* Adjust size as needed */
+            height: 30px; /* Adjust size as needed */
+            border-radius: 50%;
+            background-color: #059669; /* Green color */
+            color: #ffffff; /* White text */
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-green-100 min-h-screen flex flex-col justify-between items-center">
+
+    <!-- Stylized Green Header Label with user info -->
+    <div id="header" class="no-print w-full bg-gradient-to-r from-green-700 to-emerald-600 text-white text-center py-5 text-4xl font-extrabold rounded-b-3xl">
+        SSTs Test Preparation 2025
+        <h3 class="text-xl font-semibold mt-2">By Imran Ustad</h3>
+        <p class="text-base">WhatsApp: 03345501369</p>
+        <p class="text-base mt-1">
+            <a href="https://www.youtube.com/@TheImranUstad" target="_blank" rel="noopener noreferrer" class="text-white hover:text-gray-200 transition-colors">
+                https://www.youtube.com/@TheImranUstad
+            </a>
+        </p>
+    </div>
+
+    <!-- Main quiz container with enhanced styling -->
+    <div class="container max-w-5xl mx-auto rounded-3xl shadow-2xl bg-white p-8 sm:p-12 my-8 flex-1 flex flex-col justify-center items-center">
+        
+        <!-- Name entry container (initial screen) -->
+        <div id="name-entry-container" class="w-full max-w-md text-center p-8 bg-gray-50 rounded-3xl shadow-inner border-t-4 border-green-500">
+            <h2 class="text-3xl font-extrabold text-green-700 mb-6">Welcome to the Quiz!</h2>
+            <p class="text-lg text-gray-700 mb-4">Please enter your name to begin.</p>
+            <input type="text" id="name-input" placeholder="Enter your name" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 mb-6 text-center text-lg">
+            <button id="start-btn" class="w-full text-white font-bold py-3.5 rounded-full shadow-lg transition-colors bg-blue-600 hover:bg-blue-700 no-zoom">
+                Start Quiz
+            </button>
+        </div>
+        
+        <!-- Quiz content wrapper (initially hidden) -->
+        <div id="quiz-content-wrapper" class="hidden w-full">
+            <!-- Controls and Timer section (Reversed for right alignment) -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                <!-- This div is for navigation buttons (currently empty) -->
+                <div class="flex gap-4">
+                    <!-- Navigation buttons will be dynamically shown here -->
+                </div>
+                <!-- Timer is now on the right -->
+                <div class="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-xl font-semibold text-gray-700">Time Left:</span>
+                    <span id="timer" class="text-3xl font-bold text-red-600 bg-red-100 px-5 py-2.5 rounded-xl shadow-inner">60:00</span>
+                </div>
+            </div>
+
+            <!-- Quiz questions container -->
+            <div id="quiz-form" class="space-y-4">
+                <!-- Questions and navigation buttons will be dynamically inserted here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Results container (initially hidden) -->
+        <div id="results-container" class="hidden mt-8 p-8 bg-gray-50 rounded-3xl shadow-inner border-t-4 border-green-500 w-full">
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-center mb-4 text-green-700">Quiz Results</h2>
+            <p class="text-lg mb-3 text-center">
+                <span id="user-name-result" class="font-extrabold text-green-600"></span>
+            </p>
+            <p class="text-lg mb-3">
+                Total Questions: <span id="total-questions" class="font-extrabold text-green-600"></span>
+            </p>
+            <p class="text-lg mb-6">
+                Obtained Marks: <span id="obtained-marks" class="font-extrabold text-green-600"></span>
+            </p>
+
+            <!-- Video Container - Moved to appear on the results page -->
+            <div class="w-full mx-auto my-8">
+                <div class="bg-white p-6 rounded-3xl shadow-2xl">
+                    <h3 class="text-xl sm:text-2xl font-extrabold text-center mb-6 text-green-700">Preparation Guide: KPPSC SST Syllabus 2025</h3>
+                    <div class="video-container">
+                        <iframe width="695" height="391" src="https://www.youtube.com/embed/sFzdY39_Kw8" title="KPPSC SST Syllabus 2025 KPK | SST General, Maths-Physics, Bio-Chem | Past Papers &amp; Preparation Guide" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+
+            <div id="full-quiz-review" class="mt-8">
+                <h3 class="text-xl font-bold text-gray-700 mb-4">Quiz Review:</h3>
+                <!-- The full quiz review will be displayed here -->
+            </div>
+            
+            <!-- Button container for the new download button and the print button -->
+            <div class="no-print flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mt-8">
+                <!-- Download button for results as PNG -->
+                <button id="download-btn" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-full shadow-md hover:bg-indigo-700 transition-colors no-zoom">
+                    Download Result Card (PNG)
+                </button>
+                <!-- Print Result button -->
+                <button id="print-btn" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-full shadow-md hover:bg-blue-700 transition-colors no-zoom">
+                    Print Result
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Custom modal for validation/errors -->
+    <div id="validation-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <p id="modal-message" class="text-xl font-semibold mb-6 text-gray-800"></p>
+            <button id="modal-close-btn" class="bg-red-500 text-white font-bold py-2.5 px-6 rounded-full hover:bg-red-600 transition-colors no-zoom">
+                Close
+            </button>
+        </div>
+    </div>
+    
+    <!-- Updated Green Footer Label with enhanced styling -->
+    <footer id="footer" class="no-print w-full bg-gradient-to-r from-green-700 to-emerald-600 text-white text-center py-6 text-2xl font-semibold rounded-t-3xl">
+        <h3 class="text-2xl font-extrabold mb-1">By Imran Ustad</h3>
+        <p class="text-base mb-1">WhatsApp: 03345501369</p>
+        <p class="text-base">
+            <a href="https://www.youtube.com/@TheImranUstad" target="_blank" rel="noopener noreferrer" class="text-white hover:text-gray-200 transition-colors">
+                https://www.youtube.com/@TheImranUstad
+            </a>
+        </p>
+    </footer>
+
+    <script>
+        // Array of 60 MCQs on Teaching Methods and Strategies
+        const allQuestions = [
+            // Teacher-Centered Methods (Lecture, Demonstration) - 20 questions
+            { question: "1. Which teaching method is characterized by the teacher being the primary source of information, delivering content to a large group of students?", options: ["Discussion Method", "Lecture Method", "Inquiry-Based Learning", "Project Method"], correct: 1 },
+            { question: "2. The main goal of a lecture is to:", options: ["Promote student collaboration", "Facilitate hands-on experimentation", "Efficiently transmit information or concepts", "Encourage self-discovery"], correct: 2 },
+            { question: "3. A disadvantage of the lecture method is its potential to lead to:", options: ["Increased student engagement", "Active learning", "Passive reception of information", "Enhanced critical thinking"], correct: 2 },
+            { question: "4. When a teacher shows students how to conduct a science experiment step-by-step, they are using the:", options: ["Lecture Method", "Demonstration Method", "Cooperative Learning", "Flipped Classroom"], correct: 1 },
+            { question: "5. The demonstration method is most effective for teaching:", options: ["Abstract theories", "Procedural skills", "Historical timelines", "Literary analysis"], correct: 1 },
+            { question: "6. A key benefit of using demonstration is that it:", options: ["Requires minimal preparation", "Provides a clear visual and practical example", "Encourages students to work independently", "Is suitable for large class sizes only"], correct: 1 },
+            { question: "7. In a teacher-centered approach, student participation is generally:", options: ["Very high and spontaneous", "Limited and often in response to direct questions", "Primarily through group projects", "Focused on peer instruction"], correct: 1 },
+            { question: "8. Which of the following is a common characteristic of both lecture and demonstration methods?", options: ["Student-led activities", "Teacher as the central figure", "Emphasis on student research", "Promoting student autonomy"], correct: 1 },
+            { question: "9. To keep students engaged during a lecture, a teacher might use:", options: ["Monotone voice", "No visual aids", "Interactive questions and varied pacing", "Long, uninterrupted speaking segments"], correct: 2 },
+            { question: "10. The effectiveness of a demonstration can be enhanced by:", options: ["Performing it quickly without explanation", "Ensuring all students can see and hear clearly", "Using complex, technical jargon", "Avoiding student questions during the process"], correct: 1 },
+            { question: "11. Which method is ideal for introducing new, complex concepts to a large audience?", options: ["Project Method", "Discussion Method", "Lecture Method", "Inquiry-Based Learning"], correct: 2 },
+            { question: "12. A teacher explaining the rules of grammar to a class is an example of the:", options: ["Demonstration Method", "Lecture Method", "Problem-Based Learning", "Cooperative Learning"], correct: 1 },
+            { question: "13. In a teacher-centered classroom, assessment typically focuses on:", options: ["Student self-reflection", "Group performance", "Individual mastery of content delivered by the teacher", "Creative problem-solving"], correct: 2 },
+            { question: "14. What is a potential pitfall of over-reliance on the lecture method?", options: ["Increased student motivation", "Development of strong independent learning skills", "Reduced critical thinking and rote memorization", "More interactive classroom environment"], correct: 2 },
+            { question: "15. When using a demonstration, it is important for the teacher to:", options: ["Assume students already know the steps", "Explain the 'why' behind each step", "Rush through the process", "Only show the final product"], correct: 1 },
+            { question: "16. Teacher-centered methods are often criticized for:", options: ["Being too time-consuming", "Not promoting deep understanding or higher-order thinking skills", "Requiring too much student preparation", "Being difficult to manage in large classes"], correct: 1 },
+            { question: "17. Which teaching method provides the most direct control over the content and pace of instruction?", options: ["Discussion Method", "Lecture Method", "Project Method", "Inquiry-Based Learning"], correct: 1 },
+            { question: "18. A teacher performing a chemical reaction in front of the class is an example of a:", options: ["Lecture", "Experiment", "Demonstration", "Simulation"], correct: 2 },
+            { question: "19. For a lecture to be effective, the content should be:", options: ["Disorganized and rambling", "Highly structured and logically presented", "Based solely on teacher opinion", "Filled with irrelevant details"], correct: 1 },
+            { question: "20. The primary advantage of the demonstration method is its ability to:", options: ["Cover a vast amount of theoretical knowledge", "Show students exactly how something is done", "Encourage abstract thinking", "Promote independent research"], correct: 1 },
+
+            // Student-Centered Methods (Discussion, Inquiry-Based, Project Method, Cooperative Learning) - 20 questions
+            { question: "21. In a discussion method, the teacher's role is to:", options: ["Dominate the conversation", "Facilitate dialogue and guide student thinking", "Provide all answers", "Assess individual performance silently"], correct: 1 },
+            { question: "22. The primary goal of a classroom discussion is to:", options: ["Ensure students memorize facts", "Promote active learning, critical thinking, and diverse perspectives", "Minimize student interaction", "Cover content quickly"], correct: 1 },
+            { question: "23. Inquiry-based learning typically begins with:", options: ["A pre-determined solution", "A compelling question, problem, or scenario", "A detailed lecture on the topic", "A summative assessment"], correct: 1 },
+            { question: "24. In inquiry-based learning, students are encouraged to:", options: ["Passively receive information", "Ask questions, investigate, and construct their own knowledge", "Rely solely on the teacher for answers", "Avoid collaborative activities"], correct: 1 },
+            { question: "25. The Project Method is characterized by students working on:", options: ["Abstract theoretical problems", "Real-world, complex tasks that result in a tangible product or presentation", "Individual, isolated assignments", "Short, rote memorization drills"], correct: 1 },
+            { question: "26. A significant benefit of the Project Method is the development of:", options: ["Limited creativity", "Practical skills, problem-solving, and collaboration", "Reduced student motivation", "Exclusive focus on theoretical knowledge"], correct: 1 },
+            { question: "27. Cooperative learning emphasizes students working:", options: ["Individually to compete for grades", "Together in small groups to achieve shared goals", "Under strict teacher supervision at all times", "Silently without interaction"], correct: 1 },
+            { question: "28. Which principle is central to effective cooperative learning?", options: ["Negative interdependence", "Individual accountability and positive interdependence", "Teacher as the sole decision-maker", "Minimizing student interaction"], correct: 1 },
+            { question: "29. In a student-centered classroom, the learning process is driven by:", options: ["The teacher's agenda", "Student interests and active participation", "Standardized tests", "Strict adherence to a textbook"], correct: 1 },
+            { question: "30. Which method allows students to take ownership of their learning by exploring topics based on their own questions?", options: ["Lecture", "Demonstration", "Inquiry-based learning", "Direct instruction"], correct: 2 },
+            { question: "31. For a discussion to be successful, students should be able to:", options: ["Interrupt others frequently", "Listen actively and articulate their thoughts clearly", "Only speak when called upon by the teacher", "Avoid challenging ideas"], correct: 1 },
+            { question: "32. The teacher's role in the Project Method is often described as a:", options: ["Dictator of tasks", "Facilitator, mentor, and resource provider", "Passive observer", "Sole evaluator"], correct: 1 },
+            { question: "33. Cooperative learning often improves students' social and communication skills because they:", options: ["Are isolated from peers", "Are forced to compete intensely", "Learn to negotiate, share, and resolve conflicts", "Only interact with the teacher"], correct: 2 },
+            { question: "34. Which of these is a primary outcome of inquiry-based learning?", options: ["Rote memorization of facts", "Development of research and problem-solving skills", "Passive listening", "Strict adherence to instructions"], correct: 1 },
+            { question: "35. A classroom where students work in small groups on a shared task, with each member responsible for a part of the work, is likely using:", options: ["Lecture Method", "Demonstration Method", "Cooperative Learning", "Direct Instruction"], correct: 2 },
+            { question: "36. Student-centered methods are generally more effective for fostering:", options: ["Dependence on the teacher", "Rote memorization", "Higher-order thinking, creativity, and autonomy", "Uniform learning outcomes for all students"], correct: 2 },
+            { question: "37. When students present their findings from a long-term assignment, they are likely engaged in the:", options: ["Lecture Method", "Discussion Method", "Project Method", "Inquiry-Based Learning"], correct: 2 },
+            { question: "38. What is a key challenge in implementing effective discussions?", options: ["Ensuring all students participate meaningfully", "Lack of content to discuss", "Students being too quiet", "Teachers dominating the conversation"], correct: 0 },
+            { question: "39. The main difference between inquiry-based learning and traditional methods is the emphasis on:", options: ["Teacher-led instruction vs. student-led investigation", "Memorization vs. recall", "Individual work vs. group work", "Theory vs. practice"], correct: 0 },
+            { question: "40. Which student-centered method is best for developing leadership and teamwork skills?", options: ["Lecture Method", "Individual Research", "Cooperative Learning", "Direct Instruction"], correct: 2 },
+
+            // Modern Strategies (Flipped Classroom, Problem-Based Learning) - 20 questions
+            { question: "41. In a Flipped Classroom model, what content is typically delivered outside of the traditional classroom setting?", options: ["Group discussions", "Direct instruction (lectures, readings, videos)", "Hands-on experiments", "Collaborative problem-solving"], correct: 1 },
+            { question: "42. The main purpose of class time in a Flipped Classroom is to:", options: ["Introduce new material through lecture", "Engage in active learning, application, and deeper understanding activities", "Administer individual tests", "Provide independent study time"], correct: 1 },
+            { question: "43. Problem-Based Learning (PBL) begins with:", options: ["A clear, pre-defined solution", "An ill-structured, real-world problem or challenge", "A set of vocabulary terms to memorize", "A teacher-led lecture on theoretical concepts"], correct: 1 },
+            { question: "44. In PBL, students primarily work in groups to:", options: ["Receive direct answers from the teacher", "Identify learning needs, conduct research, and propose solutions", "Complete individual worksheets silently", "Compete against other groups"], correct: 1 },
+            { question: "45. A key advantage of the Flipped Classroom is that it allows teachers to:", options: ["Reduce their overall teaching time", "Provide more individualized support and clarification during class", "Avoid preparing any lessons in advance", "Eliminate the need for homework"], correct: 1 },
+            { question: "46. Problem-Based Learning is highly effective for developing:", options: ["Rote memorization skills", "Passive listening abilities", "Critical thinking, research, and collaborative problem-solving skills", "Strict adherence to a single correct answer"], correct: 2 },
+            { question: "47. Which modern strategy leverages technology to shift traditional instructional delivery to the home, freeing up class time for active learning?", options: ["Cooperative Learning", "Inquiry-Based Learning", "Flipped Classroom", "Direct Instruction"], correct: 2 },
+            { question: "48. In PBL, the teacher's role evolves from content deliverer to a:", options: ["Sole authority figure", "Expert who provides all solutions", "Facilitator, coach, and guide", "Strict disciplinarian"], correct: 2 },
+            { question: "49. The Flipped Classroom model aims to transform the classroom into a space for:", options: ["Silent, independent work", "Teacher-led lectures only", "Interactive application of concepts and deeper engagement", "Standardized testing"], correct: 2 },
+            { question: "50. Which modern strategy encourages students to learn by actively resolving complex, authentic issues?", options: ["Lecture", "Demonstration", "Problem-Based Learning", "Traditional Homework"], correct: 2 },
+            { question: "51. A potential challenge for students in a Flipped Classroom is:", options: ["Having too much teacher support", "Lack of access to necessary technology or self-discipline for pre-class learning", "Reduced workload", "Easier understanding of all concepts"], correct: 1 },
+            { question: "52. PBL often culminates in students presenting their proposed solutions, which helps develop:", options: ["Their ability to avoid public speaking", "Communication, argumentation, and presentation skills", "Reliance on teacher feedback only", "Individual isolation"], correct: 1 },
+            { question: "53. In a Flipped Classroom, formative assessment (checking for understanding) is typically integrated:", options: ["Only at the end of the unit", "Throughout class time through active learning and teacher interaction", "Only through large, summative exams", "Before any content is introduced"], correct: 1 },
+            { question: "54. Problem-Based Learning encourages students to become active ____ of knowledge, rather than passive recipients.", options: ["recipients", "consumers", "constructors", "imitators"], correct: 2 },
+            { question: "55. Which of these is a shared characteristic of both Flipped Classroom and PBL?", options: ["Teacher as the sole source of knowledge", "Emphasis on passive learning", "Student-centered approach and active engagement in class", "Strict adherence to a fixed, unchangeable curriculum"], correct: 2 },
+            { question: "56. The flexibility in how and when students initially access content is a major benefit of the ____ model.", options: ["traditional lecture", "demonstration", "flipped classroom", "direct instruction"], correct: 2 },
+            { question: "57. PBL typically requires students to engage in extensive:", options: ["Memorization of isolated facts", "Independent research, critical analysis, and synthesis of information", "Copying notes from the board", "Listening to long, uninterrupted lectures"], correct: 1 },
+            { question: "58. What is a potential advantage for students in a Flipped Classroom?", options: ["Less homework overall", "More personalized attention and support during class time", "Easier access to all content at school only", "Reduced need for self-discipline"], correct: 1 },
+            { question: "59. Problem-Based Learning fosters skills that are highly transferable to:", options: ["Rote learning environments", "Real-world professional and academic challenges", "Strictly theoretical subjects with no practical application", "Individual, isolated work settings"], correct: 1 },
+            { question: "60. Both Flipped Classroom and PBL aim to maximize ____ learning time within the classroom.", options: ["teacher-led", "passive", "active", "individual"], correct: 2 }
+        ];
+
+        let userAnswers = {};
+        let currentQuestionIndex = 0;
+        let timerSeconds = 60 * 60; // 60 minutes for 60 questions
+        let timerInterval;
+        let userName = '';
+
+        const nameEntryContainer = document.getElementById('name-entry-container');
+        const quizContentWrapper = document.getElementById('quiz-content-wrapper');
+        const nameInput = document.getElementById('name-input');
+        const startBtn = document.getElementById('start-btn');
+        const quizForm = document.getElementById('quiz-form');
+        const resultsContainer = document.getElementById('results-container');
+        const timerDisplay = document.getElementById('timer');
+        const modal = document.getElementById('validation-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const printBtn = document.getElementById('print-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const userNameResult = document.getElementById('user-name-result');
+        const fullQuizReview = document.getElementById('full-quiz-review');
+
+        // Function to render a single question on the page
+        function renderQuestion(index) {
+            quizForm.innerHTML = ''; // Clear previous questions
+            const q = allQuestions[index];
+
+            const questionBox = document.createElement('div');
+            questionBox.className = 'bg-slate-100 p-6 rounded-2xl shadow-lg mb-6';
+            
+            const questionText = document.createElement('p');
+            // Changed color to bright red
+            questionText.className = 'text-lg sm:text-xl font-bold font-georgia text-[#FF0000] mb-4 flex items-center'; 
+            
+            const questionNumberSpan = document.createElement('span');
+            questionNumberSpan.className = 'question-number-circle';
+            questionNumberSpan.textContent = (index + 1);
+            questionText.appendChild(questionNumberSpan);
+            
+            const questionContentSpan = document.createElement('span');
+            // Remove any HTML tags from the question string before setting innerHTML
+            questionContentSpan.textContent = q.question.substring(q.question.indexOf('.') + 2).replace(/<\/?span[^>]*>/g, ""); 
+            questionText.appendChild(questionContentSpan);
+
+            questionBox.appendChild(questionText);
+
+            q.options.forEach((option, optionIndex) => {
+                const label = document.createElement('label');
+                label.className = 'quiz-option-label relative flex items-center p-4 mb-3 rounded-xl bg-white border border-gray-200 cursor-pointer transition-all duration-300 ease-in-out';
+                
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = `question-${index}`;
+                input.value = optionIndex;
+                
+                const optionSpan = document.createElement('span');
+                optionSpan.className = 'ml-3 text-base sm:text-lg text-gray-800 font-medium';
+                // Ensure options are plain text
+                optionSpan.textContent = option; 
+                
+                label.appendChild(input);
+                label.appendChild(optionSpan);
+                questionBox.appendChild(label);
+            });
+
+            // Add navigation buttons to the question box
+            const navButtonsDiv = document.createElement('div');
+            navButtonsDiv.className = 'flex justify-between mt-6 space-x-4';
+            
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.id = 'prev-btn';
+            prevBtn.textContent = 'Previous';
+            prevBtn.className = 'w-full text-white font-bold py-3.5 rounded-full shadow-lg transition-colors bg-gray-500 hover:bg-gray-600 no-zoom';
+            prevBtn.addEventListener('click', previousQuestion);
+
+            // Hide the previous button on the first question
+            if (currentQuestionIndex === 0) {
+                prevBtn.classList.add('hidden');
+            }
+
+            // Next/Submit Button
+            let nextBtn;
+            if (currentQuestionIndex === allQuestions.length - 1) {
+                nextBtn = document.createElement('button');
+                nextBtn.id = 'submit-btn';
+                nextBtn.textContent = 'Submit Quiz';
+                nextBtn.className = 'w-full text-white font-bold py-3.5 rounded-full shadow-lg transition-colors submit-btn no-zoom';
+                nextBtn.addEventListener('click', submitQuiz);
+            } else {
+                nextBtn = document.createElement('button');
+                nextBtn.id = 'next-btn';
+                nextBtn.textContent = 'Next';
+                nextBtn.className = 'w-full text-white font-bold py-3.5 rounded-full shadow-lg transition-colors bg-blue-600 hover:bg-blue-700 no-zoom';
+                nextBtn.addEventListener('click', nextQuestion);
+            }
+            
+            navButtonsDiv.appendChild(prevBtn);
+            navButtonsDiv.appendChild(nextBtn);
+            questionBox.appendChild(navButtonsDiv);
+            
+            quizForm.appendChild(questionBox);
+            
+            // Highlight the previously selected answer if it exists
+            if (userAnswers[index] !== undefined) {
+                const selectedLabel = quizForm.querySelector(`input[name="question-${index}"][value="${userAnswers[index]}"]`).closest('label');
+                if (selectedLabel) {
+                    selectedLabel.classList.add('selected');
+                    selectedLabel.querySelector('input').checked = true; // Set the radio button as checked
+                }
+            }
+
+            // Add event listeners for new radio buttons
+            const radioButtons = quizForm.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', (event) => {
+                    const parentLabel = event.target.closest('label');
+                    const questionBox = parentLabel.closest('div');
+                    
+                    // Remove 'selected' class from all other labels in the same question
+                    questionBox.querySelectorAll('label').forEach(label => {
+                        label.classList.remove('selected');
+                    });
+                    
+                    // Add 'selected' class to the currently chosen label
+                    parentLabel.classList.add('selected');
+                });
+            });
+        }
+        
+        // Function to start the countdown timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                const minutes = Math.floor(timerSeconds / 60);
+                const seconds = timerSeconds % 60;
+                timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "Time's up!";
+                    submitQuiz();
+                }
+            }, 1000);
+        }
+
+        // Function to show the custom validation modal
+        function showModal(message) {
+            modalMessage.textContent = message;
+            modal.classList.add('active');
+            modal.classList.remove('hidden');
+        }
+
+        // Function to move to the next question
+        function nextQuestion() {
+            const selected = document.querySelector(`input[name="question-${currentQuestionIndex}"]:checked`);
+            if (!selected) {
+                showModal("Please select an option before moving to the next question.");
+                return;
+            }
+            userAnswers[currentQuestionIndex] = parseInt(selected.value);
+            
+            currentQuestionIndex++;
+            if (currentQuestionIndex < allQuestions.length) {
+                renderQuestion(currentQuestionIndex);
+            }
+        }
+        
+        // Function to move to the previous question
+        function previousQuestion() {
+            // Save the current answer before moving back
+            const selected = document.querySelector(`input[name="question-${currentQuestionIndex}"]:checked`);
+            if (selected) {
+                userAnswers[currentQuestionIndex] = parseInt(selected.value);
+            }
+            
+            currentQuestionIndex--;
+            if (currentQuestionIndex >= 0) {
+                renderQuestion(currentQuestionIndex);
+            }
+        }
+        
+        // New function to start the quiz after name entry
+        function startQuiz() {
+            const name = nameInput.value.trim();
+            if (!name) {
+                showModal("Please enter your name to start the quiz.");
+                return;
+            }
+            userName = name;
+            nameEntryContainer.classList.add('hidden');
+            quizContentWrapper.classList.remove('hidden');
+            renderQuestion(currentQuestionIndex);
+            startTimer();
+        }
+
+        // Function to render the full quiz results with correct and incorrect answers highlighted
+        function renderFullResults() {
+            fullQuizReview.innerHTML = ''; // Clear previous review
+            
+            allQuestions.forEach((q, index) => {
+                const questionReviewItem = document.createElement('div');
+                questionReviewItem.className = 'quiz-review-item';
+                
+                const questionText = document.createElement('p');
+                questionText.className = 'quiz-review-question';
+                // Ensure the question content is correctly displayed, including any red highlighting
+                questionText.innerHTML = `<span class="question-number-circle">${index + 1}</span> ${q.question.substring(q.question.indexOf('.') + 2)}`;
+                questionReviewItem.appendChild(questionText);
+
+                q.options.forEach((option, optionIndex) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'quiz-review-option';
+                    
+                    const isCorrect = optionIndex === q.correct;
+                    const isUserAnswer = userAnswers[index] === optionIndex;
+
+                    // Apply green for correct answer
+                    if (isCorrect) {
+                        optionDiv.classList.add('correct');
+                        optionDiv.innerHTML = `✅ ${option}`;
+                    } 
+                    // Apply red for incorrect user answer
+                    else if (isUserAnswer) {
+                        optionDiv.classList.add('incorrect');
+                        optionDiv.innerHTML = `❌ ${option}`;
+                    }
+                    // Default styling for other options
+                    else {
+                        optionDiv.innerHTML = `${String.fromCharCode(65 + optionIndex)}. ${option}`;
+                    }
+                    
+                    questionReviewItem.appendChild(optionDiv);
+                });
+                
+                fullQuizReview.appendChild(questionReviewItem);
+            });
+        }
+
+        // Function to submit the quiz and display results
+        function submitQuiz() {
+            clearInterval(timerInterval); // Stop the timer
+            
+            // Check if the final question is answered
+            const selected = document.querySelector(`input[name="question-${currentQuestionIndex}"]:checked`);
+            if (!selected) {
+                showModal("Please select an option before submitting.");
+                return;
+            }
+            userAnswers[currentQuestionIndex] = parseInt(selected.value);
+
+            // Disable all radio buttons and buttons after submission
+            const allRadios = quizForm.querySelectorAll('input[type="radio"]');
+            allRadios.forEach(radio => radio.disabled = true);
+
+            let score = 0;
+            allQuestions.forEach((q, index) => {
+                if (userAnswers[index] === q.correct) {
+                    score++;
+                }
+            });
+
+            // Display results
+            userNameResult.textContent = `Quiz Taker: ${userName}`;
+            document.getElementById('total-questions').textContent = allQuestions.length;
+            document.getElementById('obtained-marks').textContent = score;
+            
+            // Render the full quiz review
+            renderFullResults();
+
+            // Hide quiz, show results container
+            quizContentWrapper.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show the name entry screen by default
+            nameEntryContainer.classList.remove('hidden');
+        });
+        
+        startBtn.addEventListener('click', startQuiz);
+        
+        modalCloseBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('active');
+        });
+        
+        // Event listener for the "Print Result" button
+        printBtn.addEventListener('click', () => {
+            window.print();
+        });
+        
+        // Event listener for the "Download Result Card" button
+        downloadBtn.addEventListener('click', () => {
+            const headerContent = document.getElementById('header').innerHTML;
+            const footerContent = document.getElementById('footer').innerHTML;
+            const userName = document.getElementById('user-name-result').textContent;
+            const totalQuestions = document.getElementById('total-questions').textContent;
+            const obtainedMarks = document.getElementById('obtained-marks').textContent;
+
+            // Create a temporary, hidden container for the image generation
+            const tempContainer = document.createElement('div');
+            tempContainer.id = 'download-result-container';
+            document.body.appendChild(tempContainer);
+
+            // Get current date and time
+            const now = new Date();
+            const dateStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            
+            // Build the simplified content for the image
+            tempContainer.innerHTML = `
+                <div class="header-clone">${headerContent}</div>
+                <div class="results-clone">
+                    <h2 class="text-3xl font-extrabold text-center mb-4 text-green-700">Quiz Results</h2>
+                    <p class="text-lg mb-1 text-center font-bold text-gray-700">Pedagogy MCQs for SSTs</p>
+                    <p class="text-lg mb-3 text-center font-extrabold text-green-600">${userName}</p>
+                    <p class="text-lg text-gray-700 mt-4 text-center">Date: ${dateStr} - Time: ${timeStr}</p>
+                    <p class="text-lg mb-3 text-center">
+                        Total Questions: <span class="font-extrabold text-green-600">${totalQuestions}</span>
+                    </p>
+                    <p class="text-lg mb-6 text-center">
+                        Obtained Marks: <span class="font-extrabold text-green-600">${obtainedMarks}</span>
+                    </p>
+                </div>
+                <div class="footer-clone">${footerContent}</div>
+            `;
+            
+            // Use html2canvas to capture the content of the temporary container
+            html2canvas(tempContainer, {
+                scale: 2, // Increase scale for a higher-quality image
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const image = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = 'SST_Test_Result_Card.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).finally(() => {
+                // Clean up the temporary container
+                document.body.removeChild(tempContainer);
+            });
+        });
+    </script>
+</body>
+</html>
